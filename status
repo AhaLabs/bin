@@ -1,0 +1,28 @@
+#!/bin/bash
+
+OTHER=""
+
+for repo in */; do
+  cd "$repo" || {
+    printf "\n\n\e[1;31mFAILED:\e[0m no repository statuses checked beyond \e[1;34m%s\e[0m\n" "$repo"
+    exit 1
+  }
+
+  if [[
+    master != $(git rev-parse --abbrev-ref HEAD) ||
+    $(git status --short | wc -c) -ne 0
+  ]]; then
+    # set OTHER variable if any repository found to have dirty working tree
+    OTHER=" other"
+    printf "========== \e[1;34m%s\e[0m ==========\n" "$repo";
+    git status "$@"
+    printf "\n";
+  fi
+
+  cd ..
+done
+
+if [[ $OTHER != "" ]]; then
+  printf "==================================\n\n"
+fi
+printf "\e[1;32mAll%s projects on clean master\e[0m\n" "$OTHER"

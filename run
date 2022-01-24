@@ -1,0 +1,14 @@
+#!/bin/bash
+
+arr=$*;
+
+for repo in *; do
+  if test -d "./$repo"; then
+    printf "\n\n========== Executing \e[1;34m%s\e[0m in " "$arr"
+    printf "\e[1;34m%s\e[0m ==========\n" "$repo"
+    (
+      cd "$repo" || return;
+      "$@"
+    )
+  fi
+done

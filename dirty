@@ -1,0 +1,10 @@
+#!/bin/bash
+
+for repo in */; do
+  (
+    cd "$repo" || exit
+    if [[ $(git status --short | wc -c) -ne 0 ]]; then
+      echo "$repo"
+    fi
+  )
+done

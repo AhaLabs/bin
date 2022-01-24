@@ -1,0 +1,38 @@
+#!/bin/bash
+
+ORG=$(git url | sed "s/https:\/\/github.com\///" | sed "s/\/.*//")
+
+echo "Pulling repositories for \"$ORG\" org"
+
+SEARCH=$1
+
+if [[ ${#SEARCH} -gt 0 ]]; then
+  echo "Limiting repositories to those matching search term \"$SEARCH\""
+fi
+
+for repo in $(
+  curl -H "Authorization: bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github.v4.idl" \
+  -d '{ "query":"{ search(type: REPOSITORY, first: 100, query: \"org:'$ORG' '$SEARCH' fork:true\") { nodes { ... on Repository { name } } } }"}' \
+  https://api.github.com/graphql \
+  | jq -r '.data.search.nodes[].name'
+); do
+  if test -d "./$repo"; then
+    printf "\n\n========== pulling latest \e[1;34m%s\e[0m ==========\n" "$repo"
+    (
+      cd "$repo" || return;
+      if [[ master != $(git branch --show-current) ]]; then
+        printf "\n\n\e[1;31mSKIPPING\e[0m, not on master\n"
+        git status
+      elif [[ $(git status --short | wc -c) -ne 0 ]]; then
+        printf "\n\n\e[1;31mSKIPPING\e[0m, working tree not clean \n"
+        git status
+      else
+        git pull origin master
+      fi
+    )
+  else
+    printf "\n\n========== cloning \e[1;34m%s\e[0m ==========\n" "$repo"
+    git clone "git@github.com:$ORG/$repo";
+  fi
+done
